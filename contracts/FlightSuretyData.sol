@@ -45,16 +45,12 @@ contract FlightSuretyData {
     mapping(bytes32 => bytes32[]) private flightInsurances;
     mapping(address => InsureeCredit) private insureeCredits;
 
-    // Allowed App Contracts
     mapping(address => bool) private authorizedContracts; 
-
-    
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
-    //event debugEvent(uint id);
     event authorizedContract(address appContract);
     event deauthorizedContract(address appContract);
 
@@ -79,14 +75,12 @@ contract FlightSuretyData {
     * @dev Constructor
     *      The deploying account becomes contractOwner
     */
-    constructor (address initialAirline) public 
+    constructor (address firstAirline) public 
     {
         contractOwner = msg.sender;
-
-        /* Rubric: First airline is registered when contract is deployed. */ 
        
-        addAirline(initialAirline, msg.sender);
-        registerAirline(initialAirline);
+        addAirline(firstAirline, msg.sender);
+        registerAirline(firstAirline);
     }
 
     /********************************************************************************************/
@@ -119,16 +113,14 @@ contract FlightSuretyData {
     modifier requireAuthorizedCallerForRegisterAirline() 
     {
         true;
-        //FIXME:
-        //require((authorizedContracts[msg.sender] == true) || msg.sender == contractOwner, "Caller is not authorized contract for register airline");
+        require((authorizedContracts[msg.sender] == true) || msg.sender == contractOwner, "Caller is not authorized contract for register airline");
         _;
     }
 
     modifier requireAuthorizedCaller() 
     {
         true;
-        //FIXME:
-        //require((authorizedContracts[msg.sender] == true), string(abi.encodePacked("Caller is not authorized contract ", msg.sender)));
+        require((authorizedContracts[msg.sender] == true), string(abi.encodePacked("Caller is not authorized contract ", msg.sender)));
         _;
     }
 
@@ -196,8 +188,7 @@ contract FlightSuretyData {
                             address airline, 
                             address requester
                         ) 
-                        public 
-                        //pure 
+                        public
                         requireAuthorizedCallerForRegisterAirline
                         requireIsOperational 
     {   
@@ -282,7 +273,6 @@ contract FlightSuretyData {
         airlines[airline].registeredIndex = 0; 
         airlines[airline].isRegistered = false; 
         
-        // Removing from array and fix index
         uint toDeleteIndex = airlines[airline].registeredIndex;
         address lastRegisteredAirline = registeredAirlines[registeredAirlines.length-1];
         registeredAirlines[toDeleteIndex] = lastRegisteredAirline;

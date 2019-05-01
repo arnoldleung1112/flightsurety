@@ -442,17 +442,4 @@ contract FlightSuretyData {
     function getFlightInsurances(address airline, string flight, uint256 timestamp) external view returns (bytes32[]);
     function creditToInsuree(bytes32 insuranceKey) external;
     function payToInsuree(address requester) external;
-                      
-/*
-    function registerFlight(bytes32 flight, uint timeStamp, uint8 statusCode, address airlineAddress) external;
-    function processFlightStatus(address airline, string flight, uint256 timestamp, uint8 statusCode) external;
-    function isFlightRegistered(bytes32 flight) external returns (bool);
-    function buy(bytes32 flight) external payable;
-    function test1() external;
-    function test2() returns (uint256);
-    function test3() public view returns (bool);
-    
-    function returnInitialAirline() external returns(address);
-    function returnAirlinesRegistered() external returns(uint);
-    function fundAirline() external payable;*/
 }
