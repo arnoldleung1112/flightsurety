@@ -3,6 +3,7 @@ var Test = require('../config/testConfig.js');
 
 contract('Flight Surety Tests', async (accounts) => {
 
+  const FUND_FEE = web3.utils.toWei("10",'ether');
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
@@ -64,6 +65,23 @@ contract('Flight Surety Tests', async (accounts) => {
       
   });
 
+  it('(airline) denying non funded airline from registering other airlines', async () =>{
+    // ARRANGE
+    let accessDenied = false;
+    //ACT
+    try 
+    {
+        await config.flightSuretyApp.registerAirline(airline2, {from: config.firstAirline});
+    }
+    catch(e) {
+        accessDenied = true;
+    }
+
+    // ASSERT
+    assert.equal(accessDenied, true, "Airline should not be able to register another airline if it hasn't provided funding");
+
+  });
+
   it('(airline) Only existing airline may register a new airline until there are at least four airlines registered', async () => {
     
     // ARRANGE
@@ -74,8 +92,14 @@ contract('Flight Surety Tests', async (accounts) => {
 
     // ACT
     try {
+        //activating first ariline by submitting 10 ether
+        await config.flightSuretyApp.submitFunds({
+            from: config.firstAirline,
+            value: config.weiMultiple * 10
+        });
+
         await config.flightSuretyApp.registerAirline(airline2, {from: config.firstAirline});
-        await config.flightSuretyApp.registerAirline(airline3, {from: airline2});
+        await config.flightSuretyApp.registerAirline(airline3, {from: config.firstAirline});
         await config.flightSuretyApp.registerAirline(airline4, {from: config.firstAirline});
         await config.flightSuretyApp.registerAirline(airline5, {from: config.firstAirline});
     }
@@ -108,6 +132,11 @@ contract('Flight Surety Tests', async (accounts) => {
     
     // ACT
     try {
+        //active airline2 for testing
+        await config.flightSuretyApp.submitFunds({
+            from: airline2,
+            value: config.weiMultiple * 10
+        });
 
         //Assuming that in the previous test 4 airlines were registered
         await config.flightSuretyApp.registerAirline(airline6, {from: config.firstAirline});
@@ -192,7 +221,7 @@ contract('Flight Surety Tests', async (accounts) => {
 });
 
 
-it(`(passengers) can to be credited`, async function () {
+it(`(passengers) can be credited`, async function () {
     
     // ARRANGE
     let airline7 = accounts[7];

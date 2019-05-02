@@ -112,14 +112,12 @@ contract FlightSuretyData {
 
     modifier requireAuthorizedCallerForRegisterAirline() 
     {
-        true;
         require((authorizedContracts[msg.sender] == true) || msg.sender == contractOwner, "Caller is not authorized contract for register airline");
         _;
     }
 
     modifier requireAuthorizedCaller() 
     {
-        true;
         require((authorizedContracts[msg.sender] == true), string(abi.encodePacked("Caller is not authorized contract ", msg.sender)));
         _;
     }
@@ -401,7 +399,8 @@ contract FlightSuretyData {
     */
      function creditToInsuree
         (
-            bytes32 insuranceKey
+            bytes32 insuranceKey,
+            uint256 multiple
         )
         external
         requireAuthorizedCaller
@@ -410,8 +409,8 @@ contract FlightSuretyData {
         require(insurances[insuranceKey].value > 0, "Insurance not found or with not funds.");
         require(!insurances[insuranceKey].isPaid, "Insurance already paid.");
 
-        Insurance insurance = insurances[insuranceKey];
-        uint256 creditsToPay = insurance.value.mul(15).div(10);
+        Insurance storage insurance = insurances[insuranceKey];
+        uint256 creditsToPay = insurance.value.mul(multiple).div(10);
 
         require(creditsToPay < getAirlineFunds(insurance.insurer) , "Insurer not have funds to pay");
 

@@ -26,6 +26,7 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
+    uint256 private constant PAYOUT_MULTIPLE = 15;
     uint256 constant MAX_INSURANCE_VALUE = 1 ether;
 
     //event debugAppEvent(uint id);
@@ -79,6 +80,15 @@ contract FlightSuretyApp {
         _;
     }
 
+    /**
+    * @dev Modifier that requires the "Airline" that is activated
+    */
+    modifier requireActiveAirline()
+    {
+        require(flightSuretyData.isActiveAirline(msg.sender) , "Sender is not an active airline / underfund");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -121,6 +131,7 @@ contract FlightSuretyApp {
                             //pure
                             requireIsOperational() 
                             requireRegisteredAirline() 
+                            requireActiveAirline()
                             //returns(bool success, uint256 votes)
     {
        
@@ -189,13 +200,12 @@ contract FlightSuretyApp {
                          uint256 timestamp)
                         external 
                         requireIsOperational()
-                        // requireRegisteredAirline()
                         { 
 
+        
        bytes32[] memory insurances = flightSuretyData.getFlightInsurances(airline, flight, timestamp);
-       
        for (uint i=0; i<insurances.length; i++) {
-            flightSuretyData.creditToInsuree(insurances[i]);
+            flightSuretyData.creditToInsuree(insurances[i], PAYOUT_MULTIPLE);
        }
 
     }
@@ -440,6 +450,6 @@ contract FlightSuretyData {
     function fund(address senderAddress) public payable;
     function buyInsurance(address airline, string flight, uint256 timestamp, address buyer) external payable;
     function getFlightInsurances(address airline, string flight, uint256 timestamp) external view returns (bytes32[]);
-    function creditToInsuree(bytes32 insuranceKey) external;
+    function creditToInsuree(bytes32 insuranceKey, uint256 mulitple) external;
     function payToInsuree(address requester) external;
 }
