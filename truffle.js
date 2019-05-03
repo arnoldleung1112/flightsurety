@@ -1,7 +1,7 @@
 var HDWalletProvider = require("truffle-hdwallet-provider");
 var mnemonic = "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
 
-// ganache-cli --mnemonic "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" -a 20
+// ganache-cli --mnemonic "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" -a 20 -l 8000000
 
 module.exports = {
   networks: {
@@ -10,7 +10,7 @@ module.exports = {
         return new HDWalletProvider(mnemonic, "http://127.0.0.1:8545/", 0, 50);
       },
       network_id: "*",// Match any network id
-      gas: 99999999
+      gas: 8000000
     }
   },
   compilers: {

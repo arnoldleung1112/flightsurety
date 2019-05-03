@@ -14,7 +14,7 @@ let oracle_accounts = [];
 let STATUS_CODES = [0, 10, 20, 30, 40, 50];
 
 web3.eth.getAccounts((error, accounts) => {
-  for(let i = 10; i < oracles; i++) {
+  for(let i = 0; i < oracles; i++) {
     flightSuretyApp.methods.registerOracle()
     .send({from: accounts[i], value: web3.utils.toWei("1",'ether'), gas: 8000000}, (error, result) => {
       if(error) {
