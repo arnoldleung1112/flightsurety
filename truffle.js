@@ -9,16 +9,17 @@ module.exports = {
       provider: function() {
         return new HDWalletProvider(mnemonic, "http://127.0.0.1:8545/", 0, 50);
       },
-      network_id: "*"// Match any network id
+      network_id: "*",// Match any network id
+      gas: 99999999
     }
   },
   compilers: {
     solc: {
-      version: "^0.4.25"/*,
+      version: "^0.4.25",
       optimizer: {
           enabled: true,
-          runs: 1000
-      },*/
+          runs: 200
+      }
   }
   }
 };

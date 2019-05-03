@@ -37,6 +37,14 @@ contract FlightSuretyData {
         bytes32[] creditedInsurances;
     }
 
+    struct Flight {
+        bool isRegistered;
+        uint8 statusCode;
+        uint256 updatedTimestamp;        
+        address airline;
+    }
+    mapping(bytes32 => Flight) private flights;
+
     address[] registeredAirlines;
     address[] activeAirlines;
 
@@ -52,8 +60,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
 
     event authorizedContract(address appContract);
-    event deauthorizedContract(address appContract);
-
+    
     event addedAirline(address airlineAddress, address requester);
     event registeredAirline(address airlineAddress);
     event airlineSubmittedFunds(address airlineAddress, uint256 value);
@@ -160,17 +167,6 @@ contract FlightSuretyData {
     {
         authorizedContracts[appContractAddress] = true; 
         emit authorizedContract(appContractAddress);
-    }
-
-    function deauthorizeContract
-                            (
-                                address appContractAddress
-                            )
-                            external
-                            requireContractOwner
-    {
-        delete authorizedContracts[appContractAddress];
-        emit deauthorizedContract(appContractAddress);
     }
 
     /********************************************************************************************/
@@ -300,6 +296,26 @@ contract FlightSuretyData {
 
     }    
 
+    function registerFlight(bytes32 flightKey, uint256 timestamp, address sender) 
+                            external 
+                            requireIsOperational 
+    {
+        require(airlines[sender].isRegistered || contractOwner == sender, "Caller must be a registered funded airline");
+        flights[flightKey] = Flight(true, 0, timestamp, sender);
+    }
+
+    function processFlightStatus(
+                                address airline,
+                                string flight, 
+                                uint256 timestamp, 
+                                uint8 statusCode) 
+                                external 
+                                requireIsOperational 
+    {
+        bytes32 flightKey = keccak256(abi.encodePacked(airline, flight, timestamp));
+        flights[flightKey].statusCode = statusCode;
+        flights[flightKey].updatedTimestamp = timestamp;
+    }
     
     function getRegistrants( address airline )
                                 external
@@ -355,10 +371,10 @@ contract FlightSuretyData {
         require(msg.value > 0, "Insurance value is zero");
         require(isActiveAirline(airline), "Airline is not active");
         
-        bytes32 _flightKey = getFlightKey(airline, flight, timestamp);
+        bytes32 _flightKey = keccak256(abi.encodePacked(airline, flight, timestamp));
         bytes32 _insuranceKey = keccak256(abi.encodePacked(buyer, airline, flight, timestamp));
         
-        require(insurances[_insuranceKey].insuree != buyer, "Insurence already purchased");
+        require(insurances[_insuranceKey].insuree != buyer, "Insurance already purchased");
 
         insurances[_insuranceKey] = Insurance({
             flightKey: _flightKey,
@@ -389,7 +405,7 @@ contract FlightSuretyData {
         requireIsOperational
         returns (bytes32[])
     {
-       return flightInsurances[getFlightKey(airline, flight, timestamp)];
+       return flightInsurances[keccak256(abi.encodePacked(airline, flight, timestamp))];
     }
 
 
@@ -399,6 +415,9 @@ contract FlightSuretyData {
     */
      function creditToInsuree
         (
+            address airline,
+            string flight,
+            uint256 timestamp,
             bytes32 insuranceKey,
             uint256 multiple
         )
@@ -408,7 +427,8 @@ contract FlightSuretyData {
     {
         require(insurances[insuranceKey].value > 0, "Insurance not found or with not funds.");
         require(!insurances[insuranceKey].isPaid, "Insurance already paid.");
-
+        bytes32 flightHash = keccak256(abi.encodePacked(airline, flight, timestamp));
+        require(flights[flightHash].statusCode == 20, 'wrong statusCode');
         Insurance storage insurance = insurances[insuranceKey];
         uint256 creditsToPay = insurance.value.mul(multiple).div(10);
 
@@ -456,19 +476,6 @@ contract FlightSuretyData {
         airlines[senderAddress].fundsValue = airlines[senderAddress].fundsValue.add(msg.value);
         emit airlineSubmittedFunds(airlines[senderAddress].airlineAddress, airlines[senderAddress].fundsValue);
         emit airlineSubmittedFunds(senderAddress, msg.value);
-    }
-
-    function getFlightKey
-                        (
-                            address airline,
-                            string memory flight,
-                            uint256 timestamp
-                        )
-                        //pure
-                        internal
-                        returns(bytes32) 
-    {
-        return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
     function getInsuranceKey(address passenger, address airline, string memory flight, uint256 timestamp) 

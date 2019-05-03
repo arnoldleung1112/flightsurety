@@ -3,12 +3,11 @@ var Test = require('../config/testConfig.js');
 
 contract('Flight Surety Tests', async (accounts) => {
 
-  const FUND_FEE = web3.utils.toWei("10",'ether');
+  
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
     await config.flightSuretyData.authorizeContract(config.flightSuretyApp.address);
-    await config.flightSuretyData.authorizeContract("0xFa82B9121E37A104DE430E84CA63DcFfBcfF2551");
   });
 
   /****************************************************************************************/
@@ -202,10 +201,14 @@ contract('Flight Surety Tests', async (accounts) => {
     let airline7 = accounts[7];
     let passenger9 = accounts[9];
     let purchased = false;
+    let flight = "1234 - New York to Sao Paulo";
     
     // ACT
     try {
-        await config.flightSuretyApp.buyInsurance(airline7, "1234 - New York to Sao Paulo", 1, {
+        //airline register the flight
+        await config.flightSuretyApp.registerFlight(airline7, flight, 1, {from: config.firstAirline});
+        //passenger9 buys insurance
+        await config.flightSuretyApp.buyInsurance(airline7, flight, 1, {
             from: passenger9,
             value: config.weiMultiple * 1
         });
@@ -220,16 +223,19 @@ contract('Flight Surety Tests', async (accounts) => {
 
 });
 
-
 it(`(passengers) can be credited`, async function () {
     
     // ARRANGE
     let airline7 = accounts[7];
     let credited = false;
+    let flight = "1234 - New York to Sao Paulo";
     
     // ACT
     try {
-        await config.flightSuretyApp.creditInsurees(airline7, "1234 - New York to Sao Paulo", 1);
+        // flight is delayed
+        await config.flightSuretyData.processFlightStatus( airline7, flight, 1, 20);
+        //credit passenger
+        await config.flightSuretyApp.creditInsurees(airline7, flight, 1);
         credited = true;
     } catch (e) {
         console.log(e);
@@ -245,16 +251,17 @@ it(`(passengers) can be credited`, async function () {
 it(`(passenger) can to be payed/refunded`, async function () {
     
     // ARRANGE
-    let airline7 = accounts[7];
     
     // assuming previous tests, the nine passenger can be refunded now
     let passenger9 = accounts[9];
 
     let payed = false;
-
+    let before = await web3.eth.getBalance(passenger9);
+    let after;
     // ACT
     try {
         await config.flightSuretyApp.payToInsuree(passenger9);
+        after = await web3.eth.getBalance(passenger9);
         payed = true;
       
     } catch (e) {
@@ -264,6 +271,7 @@ it(`(passenger) can to be payed/refunded`, async function () {
 
     // ASSERT
     assert.equal(payed, true, "Passenger should be refunded");
+    assert.equal(after - before,config.weiMultiple * 1.5 , "refund value is not 1.5X");
 
 });
 
